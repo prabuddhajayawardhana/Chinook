@@ -1,0 +1,90 @@
+﻿@page "/artist/{ArtistId:long}"
+@attribute [Authorize]
+
+@using Chinook.Core.Data.Models;
+@using Chinook.Core.Data
+@using Chinook.ClientModels
+@using Chinook.Pages.Components
+@using Chinook.Services;
+@using Chinook.Utilities.Helper;
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims;
+
+@inject ITrackService trackService;
+@inject IPlaylistService playListService;
+@inject IArtistService artistService;
+@inject IGlobalErrorService globalErrorService;
+@inject EventManager eventManager;
+
+<AlertComponent Message="Message" OnClick="CloseInfoMessage" />
+
+@if (Artist == null)
+{
+    <Loading />
+}
+else
+{
+    <h1>@Artist.Name</h1>
+
+    <table class="table table-striped table-hover table-sm">
+        <thead>
+            <tr>
+                <th>Album title</th>
+                <th>Track name</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var track in Tracks)
+            {
+                <tr>
+                    <td>@track.AlbumTitle</td>
+                    <td>@track.TrackName</td>
+                    <td>
+                        @if (track.IsFavorite)
+                        {
+                            <a href="#" class="m-1" title="Unmark as favorite" @onclick="@(() => UnfavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star-fill"></i></a>
+                        }
+                        else
+                        {
+                            <a href="#" class="m-1" title="Mark as favorite" @onclick="@(() => FavoriteTrack(track.TrackId))" @onclick:preventDefault><i class="bi bi-star"></i></a>
+                        }
+                        <a href="#" class="m-1" title="Add to playlist" @onclick="@(() => OpenPlaylistDialog(track.TrackId))" @onclick:preventDefault><i class="bi bi-file-earmark-plus"></i></a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+}
+
+<Modal @ref="PlaylistDialog">
+    <Title>
+        Add to playlist
+    </Title>
+    <Body>
+        @if (SelectedTrack != null)
+        {
+            <div class="form-group mb-2">
+                <label>@Artist.Name - @SelectedTrack.AlbumTitle - @SelectedTrack.TrackName</label>
+            </div>
+        }
+
+        <div class="form-group mb-2">
+            <label for="ExistingPlaylist">Add to existing playlist</label>
+            <select class="form-control" id="ExistingPlaylist" @bind="ExistPlaylist">
+                @foreach (var item in Playlists)
+                {
+                    <option value="@item.PlaylistId">@item.Name</option>
+                }
+            </select>
+        </div>
+        <div class="form-group mb-2">
+            <label for="NewPlaylist">Create new playlist</label>
+            <input type="text" id="NewPlaylist" class="form-control" @bind="PlaylistName" placeholder="Name for the new playlist">
+        </div>
+    </Body>
+    <Footer>
+        <button class="btn btn-success" @onclick="AddTrackToPlaylist">Save</button>
+    </Footer>
+</Modal>

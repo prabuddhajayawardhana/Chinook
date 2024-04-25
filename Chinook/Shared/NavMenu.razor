@@ -1,0 +1,61 @@
+﻿@using Chinook.ClientModels;
+@using Chinook.Services;
+@using Chinook.Utilities.Helper;
+@using Microsoft.EntityFrameworkCore;
+@using System.Security.Claims;
+
+@inject IPlaylistService playListService;
+@inject EventManager eventManager;
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Chinook</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="oi oi-home" aria-hidden="true"></span>Home
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            @foreach (var playlist in Playlists)
+            {
+                var path = "playlist/" + @playlist.PlaylistId;
+                <NavLink class="nav-link" href=@path Match="NavLinkMatch.All">
+                    <i class="bi bi-music-note-list me-3" style="font-size: 1.25em"></i>@playlist.Name
+                </NavLink>
+            }
+        </div>
+
+    </nav>
+</div>
+
+@code {
+    private List<PlaylistsDto> Playlists = new List<PlaylistsDto>();
+    private bool CollapseNavMenu = true;
+    private string? NavMenuCssClass => CollapseNavMenu ? "collapse" : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InvokeAsync(StateHasChanged);
+        await GetLoad();
+        eventManager.changeEvent += (o, args) =>
+           {
+               _ = GetLoad();
+               InvokeAsync(StateHasChanged);
+           };
+    }
+
+    private async Task GetLoad() => Playlists = await playListService.GetPlaylistsAsync();
+
+    private void ToggleNavMenu()
+    {
+        CollapseNavMenu = !CollapseNavMenu;
+    }
+}
